@@ -44,6 +44,7 @@ instructions = {
             [AO, OI],
         ],
     },
+    "HLT": {"microcodes": [[HLT]]},
 }
 
 
@@ -96,17 +97,15 @@ def generate_instructions_binary(instructions):
             control_value_bin = microcode_to_control_value_binary(microcode)
             instructions_bin = instructions_bin + [
                 # Address (of Control Unit ROM), control value (in binary)
-                [instruction_opcode_bin + step_bin, control_value_bin]
+                (instruction_opcode_bin + step_bin, control_value_bin)
             ]
     return instructions_bin
 
 
-def create_rom_image(instructions_bin):
-    result = ["0000" for i in range(8 * 16)]
+def create_memory_image(instructions_bin, max_items=16):
+    result = ["0" for i in range(max_items)]
     for instruction_bin in instructions_bin:
-        address_bin = instruction_bin[0]
-        control_value_bin = instruction_bin[1]
-
+        address_bin, control_value_bin = instruction_bin
         # ROM image needs to be created in hexadecimal
         idx = binary_to_decimal(address_bin)
         result[idx] = binary_to_hex(control_value_bin)
@@ -146,14 +145,7 @@ def read_program(file_path):
     return instructions, data
 
 
-instructions_bin = generate_instructions_binary(instructions)
-rom_image = create_rom_image(instructions_bin)
-
-
-if __name__ == "__main__":
-    # write_rom_image_to_file(rom_image, "control_firmware.bin")
-    # print("Control firmware generated successfully.")
-
+def generate_program_binary(file_path):
     coded_instructions, data = read_program("adder")
 
     result = []
@@ -193,4 +185,18 @@ if __name__ == "__main__":
 
             result.append((mem_location_bin, value_bin))
 
-    print(result)
+    return result
+
+
+if __name__ == "__main__":
+    # Generage firmware
+    instructions_bin = generate_instructions_binary(instructions)
+    rom_image = create_memory_image(instructions_bin, max_items=16 * 8)
+    write_rom_image_to_file(rom_image, "control_firmware.bin")
+    print("Control firmware image generated successfully.")
+
+    # Generate Program
+    program_bin = generate_program_binary(instructions)
+    rom_image = create_memory_image(program_bin, max_items=16)
+    write_rom_image_to_file(rom_image, "adder.bin")
+    print("Program image generated successfully.")
