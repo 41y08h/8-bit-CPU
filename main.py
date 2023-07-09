@@ -18,37 +18,33 @@ CO = 13
 J = 14
 
 
-instructions = [
-    {
-        "name": "NOP",
+instructions = {
+    "NOP": {
         "microcodes": [],
     },
-    {
+    "LDA": {
         # Loads the value from the given memory location into the A Register
         # eg. LDA 15
-        "name": "LDA",
         "microcodes": [
             [IO, MI],
             [RO, AI],
         ],
     },
-    {
+    "ADD": {
         # Adds the value from the given memory location to the A Register
-        "name": "ADD",
         "microcodes": [
             [IO, MI],
             [RO, BI],
             [EO, AI],
         ],
     },
-    {
+    "OUT": {
         # Transfers the value from the A Register to the Output Register
-        "name": "OUT",
         "microcodes": [
             [AO, OI],
         ],
     },
-]
+}
 
 
 def microcode_to_control_value_binary(array):
@@ -81,8 +77,9 @@ def binary_to_hex(binary):
 
 def generate_instructions_binary(instructions):
     instructions_bin = []
-    for instruction_idx, instruction in enumerate(instructions):
+    for instruction_idx, instruction_name in enumerate(instructions):
         # Instruction
+        instruction = instructions[instruction_name]
         # Add fetch-cycle microcode to every instruction
         fetch_microcodes = [
             [CO, MI],
@@ -125,10 +122,75 @@ def write_rom_image_to_file(array, file_path):
             file.write(line + "\n")
 
 
+def read_program(file_path):
+    instructions = []
+    data = {}
+
+    with open(file_path, "r") as file:
+        for line in file:
+            line = line.strip()
+
+            # Skip empty lines
+            if not line:
+                continue
+
+            # Check if the line contains a label
+            if ":" in line:
+                label, value = line.split(":")
+                label = label.strip()
+                value = value.strip()
+                data[label] = value
+            else:
+                instructions.append(line)
+
+    return instructions, data
+
+
 instructions_bin = generate_instructions_binary(instructions)
 rom_image = create_rom_image(instructions_bin)
 
 
 if __name__ == "__main__":
-    write_rom_image_to_file(rom_image, "control_firmware.bin")
-    print("Control firmware generated successfully.")
+    # write_rom_image_to_file(rom_image, "control_firmware.bin")
+    # print("Control firmware generated successfully.")
+
+    coded_instructions, data = read_program("adder")
+
+    result = []
+    # Process instructions
+    for i, coded_instruction in enumerate(coded_instructions):
+        instruction_parts = coded_instruction.split(" ")
+        instruction_name = instruction_parts[0]
+        mem_location = int(instruction_parts[1]) if len(instruction_parts) == 2 else 0
+
+        if instruction_name not in instructions:
+            raise ValueError("Invalid instruction: %s" % instruction_name)
+
+        if mem_location not in range(16):
+            raise ValueError("Invalid memory location: %s" % mem_location)
+
+        # Opcode is the index of the instruction in the instructions dictionary
+        opcode_decimal = list(instructions.keys()).index(instruction_name)
+        opcode_bin = decimal_to_binary(opcode_decimal, num_bits=4)
+        mem_location_bin = decimal_to_binary(mem_location, num_bits=4)
+        address_bin = decimal_to_binary(i, num_bits=4)
+
+        result.append((address_bin, opcode_bin + mem_location_bin))
+
+    # Process data section
+    for label, value in data.items():
+        if label.isdigit() and int(label) in range(16):
+            mem_location = int(label)
+            value = int(value)
+
+            if value not in range(256):
+                raise ValueError(
+                    "Invalid value for memory location %s: %s" % (mem_location, value)
+                )
+
+            mem_location_bin = decimal_to_binary(mem_location, num_bits=4)
+            value_bin = decimal_to_binary(value, num_bits=8)
+
+            result.append((mem_location_bin, value_bin))
+
+    print(result)
