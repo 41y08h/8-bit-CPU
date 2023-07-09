@@ -52,6 +52,11 @@ instructions = {
             [AO, OI],
         ],
     },
+    "JMP": {
+        "microcodes": [
+            [IO, J],
+        ]
+    },
     "HLT": {"microcodes": [[HLT]]},
 }
 

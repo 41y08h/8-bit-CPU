@@ -1,7 +1,7 @@
 LDA 15
-ADD 14
 OUT
+ADD 15
+JMP 1
 HLT
 
-15: 255
-14: 1
+15: 3
