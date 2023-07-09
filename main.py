@@ -38,6 +38,14 @@ instructions = {
             [EO, AI],
         ],
     },
+    "SUB": {
+        # Subtracts the value from the given memory location from the A Register
+        "microcodes": [
+            [IO, MI],
+            [RO, BI],
+            [SU, EO, AI],
+        ],
+    },
     "OUT": {
         # Transfers the value from the A Register to the Output Register
         "microcodes": [
@@ -193,10 +201,17 @@ if __name__ == "__main__":
     instructions_bin = generate_instructions_binary(instructions)
     rom_image = create_memory_image(instructions_bin, max_items=16 * 8)
     write_rom_image_to_file(rom_image, "control_firmware.bin")
-    print("Control firmware image generated successfully.")
+    print(
+        "Control firmware image generated successfully. \nHere's the opcode binaries -->"
+    )
+
+    for instruction_name, instruction_details in instructions.items():
+        opcode = list(instructions.keys()).index(instruction_name)
+        opcode_binary = bin(opcode)[2:].zfill(4)
+        print(f"{instruction_name}: {opcode_binary}")
 
     # Generate Program
     program_bin = generate_program_binary(instructions)
     rom_image = create_memory_image(program_bin, max_items=16)
     write_rom_image_to_file(rom_image, "adder.bin")
-    print("Program image generated successfully.")
+    print("\nProgram image generated successfully.")
