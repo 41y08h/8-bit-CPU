@@ -58,6 +58,11 @@ instructions = {
     "HLT": [
         [HLT],
     ],
+    "RET": [
+        [IO, MI],
+        [RO, OI],
+        [HLT],
+    ],
 }
 
 
