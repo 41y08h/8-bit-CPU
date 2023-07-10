@@ -1,0 +1,3 @@
+LDI 7
+STA 15
+HLT

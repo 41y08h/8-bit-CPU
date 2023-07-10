@@ -36,10 +36,25 @@ instructions = {
         [RO, BI],
         [SU, EO, AI, FI],
     ],
-    "OUT": [[AO, OI]],
-    "JMP": [[IO, J]],
-    "JZ": [{"1X": [IO, J]}],
-    "HLT": [[HLT]],
+    "STA": [
+        [IO, MI],
+        [AO, RI],
+    ],
+    "LDI": [
+        [IO, AI],
+    ],
+    "OUT": [
+        [AO, OI],
+    ],
+    "JMP": [
+        [IO, J],
+    ],
+    "JZ": [
+        {"1X": [IO, J]},
+    ],
+    "HLT": [
+        [HLT],
+    ],
 }
 
 
@@ -234,10 +249,8 @@ if __name__ == "__main__":
     table = generate_lookup_table(instructions)
     ins_bin = create_instructions_binary(table)
     rom_image = create_memory_image(ins_bin, max_items=2**9)
-    write_rom_image_to_file(rom_image, "control_firmware.bin")
-    print(
-        "Control firmware image generated successfully. \nHere's the opcode binaries -->"
-    )
+    write_rom_image_to_file(rom_image, "bin/firmware.bin")
+    print("Firmware image generated successfully. \nHere's the opcode binaries -->")
 
     for instruction_name, instruction_details in instructions.items():
         opcode = list(instructions.keys()).index(instruction_name)
@@ -245,7 +258,7 @@ if __name__ == "__main__":
         print(f"{instruction_name}: {opcode_binary}")
 
     # Generate Program
-    program_bin = generate_program_binary("adder")
+    program_bin = generate_program_binary("program")
     rom_image = create_memory_image(program_bin, max_items=16)
-    write_rom_image_to_file(rom_image, "adder.bin")
+    write_rom_image_to_file(rom_image, "bin/program.bin")
     print("\nProgram image generated successfully.")
