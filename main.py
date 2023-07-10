@@ -1,5 +1,5 @@
 # Control bits
-# INSTRUCTION   STEP    FLAG    HLT  MI  RI  RO  IO  II  AI  AO  EO  SU  BI  OI  CE  CO  J  FI
+# INSTRUCTION   STEP    FLAG (CF, ZF)    HLT  MI  RI  RO  IO  II  AI  AO  EO  SU  BI  OI  CE  CO  J  FI
 
 
 HLT = 0
@@ -50,10 +50,10 @@ instructions = {
         [IO, J],
     ],
     "JZ": [
-        {"1X": [IO, J]},
+        {"X1": [IO, J]},
     ],
     "JC": [
-        {"X1": [IO, J]},
+        {"1X": [IO, J]},
     ],
     "HLT": [
         [HLT],
