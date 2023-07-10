@@ -52,6 +52,9 @@ instructions = {
     "JZ": [
         {"1X": [IO, J]},
     ],
+    "JC": [
+        {"X1": [IO, J]},
+    ],
     "HLT": [
         [HLT],
     ],
