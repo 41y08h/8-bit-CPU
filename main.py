@@ -266,7 +266,7 @@ if __name__ == "__main__":
         print(f"{instruction_name}: {opcode_binary}")
 
     # Generate Program
-    program_bin = generate_program_binary("program")
+    program_bin = generate_program_binary("programs/multiplication")
     rom_image = create_memory_image(program_bin, max_items=16)
-    write_rom_image_to_file(rom_image, "bin/program.bin")
+    write_rom_image_to_file(rom_image, "bin/multiplication.bin")
     print("\nProgram image generated successfully.")
