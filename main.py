@@ -1,5 +1,14 @@
 # Control bits
-# HLT MI RI RO IO II AI AO EO SU BI OI CE CO J -
+#
+# INSTRUCTION   STEP    FLAG    HLT  MI  RI  RO  IO  II  AI  AO  EO  SU  BI  OI  CE  CO  J  FI
+# XXXX          000     XX      0    1   0   0   0   0   0   0   0   0   0   0   0   1   0  0
+# XXXX          001     XX      0    0   0   1   0   1   0   0   0   0   0   0   1   0   0  0
+# 0000          000     XX      0    0   0   0   0   0   0   0   0   0   0   0   0   0   0  0     // 0000 NOP
+# 0001          010     XX      0    1   0   0   1   0   0   0   0   0   0   0   0   0   0  0     // 0001 LDA
+# 0001          011     XX      0    0   0   1   0   0   1   0   0   0   0   0   0   0   0  0
+# 0002          010     XX      0    1   0   0   1   0   0   0   0   0   0   0   0   0   0  0     // 0002 ADD
+# 0002          011     XX      0    0   0   1   0   0   0   0   0   0   1   0   0   0   0  0
+# 0002          100     XX      0    0   0   0   0   0   1   0   1   0   0   0   0   0   0  1
 
 HLT = 0
 MI = 1
@@ -16,48 +25,50 @@ OI = 11
 CE = 12
 CO = 13
 J = 14
-
+FI = 15
 
 instructions = {
-    "NOP": {
-        "microcodes": [],
-    },
-    "LDA": {
-        # Loads the value from the given memory location into the A Register
-        # eg. LDA 15
-        "microcodes": [
-            [IO, MI],
-            [RO, AI],
-        ],
-    },
-    "ADD": {
-        # Adds the value from the given memory location to the A Register
-        "microcodes": [
-            [IO, MI],
-            [RO, BI],
-            [EO, AI],
-        ],
-    },
-    "SUB": {
-        # Subtracts the value from the given memory location from the A Register
-        "microcodes": [
-            [IO, MI],
-            [RO, BI],
-            [SU, EO, AI],
-        ],
-    },
-    "OUT": {
-        # Transfers the value from the A Register to the Output Register
-        "microcodes": [
-            [AO, OI],
-        ],
-    },
-    "JMP": {
-        "microcodes": [
-            [IO, J],
-        ]
-    },
-    "HLT": {"microcodes": [[HLT]]},
+    "NOP": [],
+    "LDA": [
+        [IO, MI],
+        [RO, AI],
+    ],
+    "ADD": [
+        [IO, MI],
+        [RO, BI],
+        [EO, AI, FI],
+    ],
+    "SUB": [
+        [IO, MI],
+        [RO, BI],
+        [SU, EO, AI],
+    ],
+    "OUT": [[AO, OI]],
+    "JMP": [[IO, J]],
+    "HLT": [[HLT]],
+}
+
+
+ins = {
+    "NOP": [],
+    "LDA": [
+        [IO, MI],
+        [RO, AI],
+    ],
+    "ADD": [
+        [IO, MI],
+        [RO, BI],
+        [EO, AI, FI],
+    ],
+    "SUB": [
+        [IO, MI],
+        [RO, BI],
+        [SU, EO, AI, FI],
+    ],
+    "OUT": [[AO, OI]],
+    "JMP": [[IO, J]],
+    "JZ": [{"1X": [IO, J]}],
+    "HLT": [[HLT]],
 }
 
 
@@ -92,14 +103,12 @@ def binary_to_hex(binary):
 def generate_instructions_binary(instructions):
     instructions_bin = []
     for instruction_idx, instruction_name in enumerate(instructions):
-        # Instruction
-        instruction = instructions[instruction_name]
         # Add fetch-cycle microcode to every instruction
         fetch_microcodes = [
             [CO, MI],
             [RO, II, CE],
         ]
-        microcodes = fetch_microcodes + instruction["microcodes"]
+        microcodes = fetch_microcodes + instructions[instruction_name]
         instruction_opcode_bin = decimal_to_binary(instruction_idx, num_bits=4)
 
         for microcode_idx, microcode in enumerate(microcodes):
@@ -110,7 +119,7 @@ def generate_instructions_binary(instructions):
             control_value_bin = microcode_to_control_value_binary(microcode)
             instructions_bin = instructions_bin + [
                 # Address (of Control Unit ROM), control value (in binary)
-                (instruction_opcode_bin + step_bin, control_value_bin)
+                (instruction_opcode_bin + step_bin + "00", control_value_bin)
             ]
     return instructions_bin
 
@@ -159,7 +168,7 @@ def read_program(file_path):
 
 
 def generate_program_binary(file_path):
-    coded_instructions, data = read_program("adder")
+    coded_instructions, data = read_program(file_path)
 
     result = []
     # Process instructions
@@ -168,14 +177,14 @@ def generate_program_binary(file_path):
         instruction_name = instruction_parts[0]
         mem_location = int(instruction_parts[1]) if len(instruction_parts) == 2 else 0
 
-        if instruction_name not in instructions:
+        if instruction_name not in ins:
             raise ValueError("Invalid instruction: %s" % instruction_name)
 
         if mem_location not in range(16):
             raise ValueError("Invalid memory location: %s" % mem_location)
 
         # Opcode is the index of the instruction in the instructions dictionary
-        opcode_decimal = list(instructions.keys()).index(instruction_name)
+        opcode_decimal = list(ins.keys()).index(instruction_name)
         opcode_bin = decimal_to_binary(opcode_decimal, num_bits=4)
         mem_location_bin = decimal_to_binary(mem_location, num_bits=4)
         address_bin = decimal_to_binary(i, num_bits=4)
@@ -201,22 +210,95 @@ def generate_program_binary(file_path):
     return result
 
 
+def binary_wildcard_combinations(string):
+    wildcard_count = string.count("X")  # Count the number of wildcard characters
+    if wildcard_count == 0:
+        return [string]  # Return the input string as the only combination
+
+    combinations = []
+
+    # Generate all possible combinations using binary numbers
+    for i in range(2**wildcard_count):
+        binary = bin(i)[2:].zfill(
+            wildcard_count
+        )  # Convert the decimal number to binary
+
+        # Replace wildcard characters with binary digits in the string
+        combination = list(string)
+        for digit in binary:
+            combination[combination.index("X")] = digit
+
+        combinations.append("".join(combination))
+
+    return combinations
+
+
+def generate_lookup_table(instructions):
+    result = []
+    for ins_idx, ins_name in enumerate(instructions):
+        opcode_bin = decimal_to_binary(ins_idx, num_bits=4)
+
+        # Add fetch-cycle ucodes to every instruction
+        ucodes = [
+            [CO, MI],
+            [RO, II, CE],
+        ] + instructions[ins_name]
+
+        for u_idx, ucode in enumerate(ucodes):
+            isFlagsConditional = isinstance(ucode, dict)
+            step_bin = decimal_to_binary(u_idx, num_bits=3)
+
+            if isFlagsConditional:
+                for flag, ucode_flag in ucode.items():
+                    control_word_bin = microcode_to_control_value_binary(ucode_flag)
+
+                    result = result + [
+                        # Address of ROM, control word binary
+                        (ins_name, opcode_bin, step_bin, flag, control_word_bin)
+                    ]
+            else:
+                flag = "XX"
+                control_word_bin = microcode_to_control_value_binary(ucode)
+
+                result = result + [
+                    # Address of ROM, control word binary
+                    (ins_name, opcode_bin, step_bin, flag, control_word_bin)
+                ]
+
+    return result
+
+
+def create_instructions_binary(lookup_table):
+    result = []
+    for instruction in lookup_table:
+        name, opcode_bin, step_bin, flag, control_word_bin = instruction
+
+        for flag_bin in binary_wildcard_combinations(flag):
+            result = result + [
+                # Address of ROM, control word binary
+                (opcode_bin + step_bin + flag_bin, control_word_bin)
+            ]
+
+    return result
+
+
 if __name__ == "__main__":
     # Generage firmware
-    instructions_bin = generate_instructions_binary(instructions)
-    rom_image = create_memory_image(instructions_bin, max_items=16 * 8)
+    table = generate_lookup_table(ins)
+    ins_bin = create_instructions_binary(table)
+    rom_image = create_memory_image(ins_bin, max_items=2**9)
     write_rom_image_to_file(rom_image, "control_firmware.bin")
     print(
         "Control firmware image generated successfully. \nHere's the opcode binaries -->"
     )
 
-    for instruction_name, instruction_details in instructions.items():
-        opcode = list(instructions.keys()).index(instruction_name)
+    for instruction_name, instruction_details in ins.items():
+        opcode = list(ins.keys()).index(instruction_name)
         opcode_binary = bin(opcode)[2:].zfill(4)
         print(f"{instruction_name}: {opcode_binary}")
 
     # Generate Program
-    program_bin = generate_program_binary(instructions)
+    program_bin = generate_program_binary("adder")
     rom_image = create_memory_image(program_bin, max_items=16)
     write_rom_image_to_file(rom_image, "adder.bin")
     print("\nProgram image generated successfully.")

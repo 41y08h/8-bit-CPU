@@ -1,7 +1,8 @@
 LDA 15
 OUT
-ADD 15
-JMP 1
-HLT
+SUB 14
+OUT
+JZ 0
 
 15: 3
+14: 3
