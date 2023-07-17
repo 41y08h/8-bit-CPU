@@ -1,5 +1,7 @@
 # 8-bit-CPU
 
+![Circuit Image](media/hero.png)
+
 A source code is a file that can be used to generate a program for a computer. It consists of two parts separated by an empty line:
 
 1. Program
@@ -9,7 +11,7 @@ The program part of the source code contains the instructions that the computer 
 
 Each line in the program part follows this structure (without the 3 backticks ```):
 
-```<OPCODE> <OPERAND (in decimal)>```
+`<OPCODE> <OPERAND (in decimal)>`
 
 A program can have multiple lines of code.
 
@@ -24,7 +26,7 @@ HLT
 
 Moving on to the data part, each line represents a word that will be stored in memory. The structure of a single line in the data part is as follows (without the 3 backticks ```):
 
-```<ADDRESS (in decimal)>: <VALUE (in decimal)>```
+`<ADDRESS (in decimal)>: <VALUE (in decimal)>`
 
 As an example, the data part for the aforementioned program (adding two numbers in memory locations 14 and 15) would look like this:
 
